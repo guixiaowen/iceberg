@@ -61,6 +61,8 @@ import org.apache.spark.sql.connector.expressions.FieldReference
 import org.apache.spark.sql.connector.expressions.IdentityTransform
 import org.apache.spark.sql.connector.expressions.LiteralValue
 import org.apache.spark.sql.connector.expressions.Transform
+import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.command.ExplainCommand
 import scala.jdk.CollectionConverters._
 
 class IcebergSqlExtensionsAstBuilder(delegate: ParserInterface) extends IcebergSqlExtensionsBaseVisitor[AnyRef] {
@@ -75,6 +77,39 @@ class IcebergSqlExtensionsAstBuilder(delegate: ParserInterface) extends IcebergS
     val name = toSeq(ctx.multipartIdentifier.parts).map(_.getText)
     val args = toSeq(ctx.callArgument).map(typedVisit[CallArgument])
     CallStatement(name, args)
+  }
+
+  /**
+   * Create an [[ExplainCommand]] logical plan.
+   * The syntax of using this command in SQL is:
+   * {{{
+   *   EXPLAIN ICEBERG (EXTENDED | CODEGEN | COST | FORMATTED) SELECT * FROM ...
+   * }}}
+   */
+  override def visitExplainIceberg(ctx: IcebergSqlExtensionsParser.ExplainIcebergContext):
+  LogicalPlan = withOrigin(ctx) {
+
+    val statement = typedVisit(ctx.statement)
+    if (statement == null) {
+      null // This is enough since ParseException will raise later.
+    } else {
+      ExplainCommand(
+        logicalPlan = statement,
+        mode = {
+          if (ctx.EXTENDED != null) {
+            ExtendedMode
+          } else if (ctx.CODEGEN != null) {
+            CodegenMode
+          } else if (ctx.COST != null) {
+            CostMode
+          } else if (ctx.FORMATTED != null) {
+            FormattedMode
+          } else {
+            SimpleMode
+          }
+        })
+    }
+
   }
 
   /**

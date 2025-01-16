@@ -77,6 +77,8 @@ statement
     | ALTER TABLE multipartIdentifier createReplaceTagClause                                #createOrReplaceTag
     | ALTER TABLE multipartIdentifier DROP BRANCH (IF EXISTS)? identifier                   #dropBranch
     | ALTER TABLE multipartIdentifier DROP TAG (IF EXISTS)? identifier                      #dropTag
+    | EXPLAIN ICEBERG (FORMATTED | EXTENDED | CODEGEN | COST)?
+                statement                                                      #explainIceberg
     ;
 
 createReplaceTagClause
@@ -213,7 +215,7 @@ fieldList
     ;
 
 nonReserved
-    : ADD | ALTER | AS | ASC | BRANCH | BY | CALL | CREATE | DAYS | DESC | DROP | EXISTS | FIELD | FIRST | HOURS | IF | LAST | NOT | NULLS | OF | OR | ORDERED | PARTITION | TABLE | WRITE
+    : ADD | ALTER | AS | ASC | BRANCH | BY | CALL | CREATE | DAYS | DESC | DROP | EXISTS | FIELD | FIRST | HOURS | IF | LAST | NOT | NULLS | OF | OR | ORDERED | PARTITION | TABLE | WRITE | EXPLAIN | ICEBERG
     | DISTRIBUTED | LOCALLY | MINUTES | MONTHS | UNORDERED | REPLACE | RETAIN | VERSION | WITH | IDENTIFIER_KW | FIELDS | SET | SNAPSHOT | SNAPSHOTS
     | TAG | TRUE | FALSE
     | MAP
@@ -247,6 +249,11 @@ DROP: 'DROP';
 EXISTS: 'EXISTS';
 FIELD: 'FIELD';
 FIELDS: 'FIELDS';
+EXPLAIN: 'EXPLAIN';
+FORMATTED: 'FORMATTED';
+EXTENDED: 'EXTENDED';
+CODEGEN: 'CODEGEN';
+COST: 'COST';
 FIRST: 'FIRST';
 HOURS: 'HOURS';
 IF : 'IF';

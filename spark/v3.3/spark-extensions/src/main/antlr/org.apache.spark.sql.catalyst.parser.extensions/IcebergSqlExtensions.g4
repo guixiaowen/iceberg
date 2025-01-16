@@ -77,6 +77,8 @@ statement
     | ALTER TABLE multipartIdentifier createReplaceTagClause                                #createOrReplaceTag
     | ALTER TABLE multipartIdentifier DROP BRANCH (IF EXISTS)? identifier                   #dropBranch
     | ALTER TABLE multipartIdentifier DROP TAG (IF EXISTS)? identifier                      #dropTag
+    | EXPLAIN (LOGICAL | FORMATTED | EXTENDED | CODEGEN | COST)?
+            statement                                                      #explain
     ;
 
 createReplaceTagClause
@@ -246,6 +248,12 @@ DISTRIBUTED: 'DISTRIBUTED';
 DROP: 'DROP';
 EXISTS: 'EXISTS';
 FIELD: 'FIELD';
+EXPLAIN: 'EXPLAIN';
+LOGICAL: 'LOGICAL';
+FORMATTED: 'FORMATTED';
+EXTENDED: 'EXTENDED';
+CODEGEN: 'CODEGEN';
+COST: 'COST';
 FIELDS: 'FIELDS';
 FIRST: 'FIRST';
 HOURS: 'HOURS';
