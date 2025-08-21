@@ -101,17 +101,18 @@ public class TestSparkCatalogOperations extends CatalogTestBase {
     Identifier identifier = Identifier.of(tableIdent.namespace().levels(), tableIdent.name());
 
     String fieldName = "location";
+    String renameFieldName = "renameLocation";
     String propsKey = "note";
     String propsValue = "jazz";
     Table table =
         catalog.alterTable(
             identifier,
-            TableChange.addColumn(new String[] {fieldName}, DataTypes.StringType, true),
+            TableChange.addColumn(new String[] {fieldName}, DataTypes.IntegerType, true),
             TableChange.setProperty(propsKey, propsValue));
 
     assertThat(table).as("Should return updated table").isNotNull();
 
-    Column expectedField = Column.create(fieldName, DataTypes.StringType, true);
+    Column expectedField = Column.create(fieldName, DataTypes.IntegerType, true);
     assertThat(table.columns())
         .as("Adding a column to a table should return the updated table with the new column")
         .contains(expectedField, atIndex(2));
@@ -120,6 +121,19 @@ public class TestSparkCatalogOperations extends CatalogTestBase {
         .as(
             "Adding a property to a table should return the updated table with the new property with the new correct value")
         .containsEntry(propsKey, propsValue);
+
+    table =
+        catalog.alterTable(
+                identifier,
+                TableChange.updateColumnType(new String[] {fieldName}, DataTypes.LongType),
+                TableChange.updateColumnComment(new String[] {fieldName}, "this is a new comment"),
+                TableChange.updateColumnNullability(new String[] {fieldName}, true),
+                TableChange.updateColumnDefaultValue(new String[] {fieldName}, "1"),
+                TableChange.updateColumnPosition(new String[] {fieldName},
+                        TableChange.ColumnPosition.after("data")),
+                TableChange.renameColumn(new String[] {fieldName}, renameFieldName));
+
+    assertThat(table).as("Should return updated table").isNotNull();
   }
 
   @TestTemplate
