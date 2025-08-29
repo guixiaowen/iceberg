@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.UUID;
+import org.apache.comet.shaded.guava.collect.ImmutableList;
 import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.ParameterizedTestExtension;
 import org.apache.iceberg.PartitionSpec;

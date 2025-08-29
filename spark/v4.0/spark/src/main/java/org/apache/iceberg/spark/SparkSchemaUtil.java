@@ -31,6 +31,8 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.exceptions.ValidationException;
 import org.apache.iceberg.expressions.Binder;
 import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.relocated.com.google.common.base.Splitter;
 import org.apache.iceberg.relocated.com.google.common.collect.ImmutableSet;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
@@ -41,6 +43,8 @@ import org.apache.iceberg.types.Types;
 import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalog.Column;
+import org.apache.spark.sql.catalyst.util.ResolveDefaultColumnsUtils$;
+import org.apache.spark.sql.connector.catalog.ColumnDefaultValue;
 import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.StructType;
 
@@ -144,6 +148,24 @@ public class SparkSchemaUtil {
    */
   public static Type convert(DataType sparkType) {
     return SparkTypeVisitor.visit(sparkType, new SparkTypeToType());
+  }
+
+  public static Literal<?> convertDefault(String fieldName, Type type, ColumnDefaultValue columnDefaultValue) {
+    if (type.typeId() == Type.TypeID.STRUCT) {
+      throw new UnsupportedOperationException(
+              String.format("Adding struct %s with default value is not supported", fieldName));
+    }
+
+    if (type.typeId() == Type.TypeID.MAP) {
+      throw new UnsupportedOperationException(
+              String.format("Adding map %s with default value is not supported", fieldName));
+    }
+
+    if (columnDefaultValue.getSql() !=null) {
+      return Expressions.lit(type.typeId().javaClass().cast(columnDefaultValue.getSql()));
+    } else {
+      return null;
+    }
   }
 
   /**

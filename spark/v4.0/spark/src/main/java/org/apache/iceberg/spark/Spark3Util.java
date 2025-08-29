@@ -74,6 +74,7 @@ import org.apache.spark.sql.catalyst.parser.ParserInterface;
 import org.apache.spark.sql.connector.catalog.CatalogManager;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.CatalogV2Implicits;
+import org.apache.spark.sql.connector.catalog.ColumnDefaultValue;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -95,6 +96,8 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.immutable.Seq;
+
+import static org.apache.iceberg.spark.SparkSchemaUtil.convert;
 
 public class Spark3Util {
 
@@ -174,7 +177,7 @@ public class Spark3Util {
 
       } else if (change instanceof TableChange.UpdateColumnType) {
         TableChange.UpdateColumnType update = (TableChange.UpdateColumnType) change;
-        Type newType = SparkSchemaUtil.convert(update.newDataType());
+        Type newType = convert(update.newDataType());
         Preconditions.checkArgument(
             newType.isPrimitiveType(),
             "Cannot update '%s', not a primitive type: %s",
@@ -234,16 +237,16 @@ public class Spark3Util {
         add.isNullable(),
         "Incompatible change: cannot add required column: %s",
         leafName(add.fieldNames()));
-    if (add.defaultValue() != null) {
-      throw new UnsupportedOperationException(
-          String.format(
-              "Cannot add column %s since setting default values in Spark is currently unsupported",
-              leafName(add.fieldNames())));
-    }
 
-    Type type = SparkSchemaUtil.convert(add.dataType());
-    pendingUpdate.addColumn(
-        parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment());
+    Type type = convert(add.dataType());
+    if (add.defaultValue() != null) {
+      pendingUpdate.addColumn(
+              parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment(),
+              SparkSchemaUtil.convertDefault(leafName(add.fieldNames()), type, add.defaultValue()));
+    } else {
+      pendingUpdate.addColumn(
+              parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment());
+    }
 
     if (add.position() instanceof TableChange.After) {
       TableChange.After after = (TableChange.After) add.position();
@@ -910,7 +913,7 @@ public class Spark3Util {
         partitionSpec == null
             ? Option.empty()
             : Option.apply(
-                SparkSchemaUtil.convert(new Schema(partitionSpec.partitionType().fields())));
+                convert(new Schema(partitionSpec.partitionType().fields())));
 
     InMemoryFileIndex fileIndex =
         new InMemoryFileIndex(

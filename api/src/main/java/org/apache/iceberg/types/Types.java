@@ -709,6 +709,10 @@ public class Types {
       return new NestedField(true, id, name, type, doc, null, null);
     }
 
+    public static NestedField optional(int id, String name, Type type, String doc, Literal<?> initialDefault, Literal<?> writeDefault) {
+      return new NestedField(true, id, name, type, doc, initialDefault, writeDefault);
+    }
+
     public static NestedField required(int id, String name, Type type) {
       return new NestedField(false, id, name, type, null, null, null);
     }
@@ -716,6 +720,7 @@ public class Types {
     public static NestedField required(int id, String name, Type type, String doc) {
       return new NestedField(false, id, name, type, doc, null, null);
     }
+
 
     /**
      * Create a nested field.
