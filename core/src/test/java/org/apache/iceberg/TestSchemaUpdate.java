@@ -232,6 +232,18 @@ public class TestSchemaUpdate {
   }
 
   @Test
+  public void testUpdateComplex() {
+    Schema schema =
+            new Schema(
+                required("i")
+                  .withId(1)
+                  .ofType(Types.StructType.of())
+                  .withDoc("description")
+                  .withInitialDefault(Literal.of(34))
+                  .withWriteDefault(Literal.of(35))
+                  .build());
+  }
+  @Test
   public void testUpdateDocPreservesOtherMetadata() {
     Schema schema =
         new Schema(

@@ -81,6 +81,7 @@ import org.apache.spark.sql.connector.catalog.NamespaceChange;
 import org.apache.spark.sql.connector.catalog.StagedTable;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.connector.catalog.TableCatalogCapability;
 import org.apache.spark.sql.connector.catalog.TableChange;
 import org.apache.spark.sql.connector.catalog.TableChange.ColumnChange;
 import org.apache.spark.sql.connector.catalog.TableChange.RemoveProperty;
@@ -138,6 +139,11 @@ public class SparkCatalog extends BaseCatalog {
   private ViewCatalog asViewCatalog = null;
   private String[] defaultNamespace = null;
   private HadoopTables tables;
+
+
+  public Set<TableCatalogCapability> capabilities() {
+    return ImmutableSet.of(TableCatalogCapability.SUPPORT_COLUMN_DEFAULT_VALUE);
+  }
 
   /**
    * Build an Iceberg {@link Catalog} to be used by this Spark catalog adapter.

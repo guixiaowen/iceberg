@@ -71,6 +71,11 @@ public interface Literal<T> extends Serializable {
     return new Literals.DecimalLiteral(value);
   }
 
+  static Literal<CharSequence> toLiteral(CharSequence initialDefaultString, Class<?> javaClass) {
+
+    return of(initialDefaultString);
+  }
+
   /** Returns the value wrapped by this literal. */
   T value();
 

@@ -454,4 +454,18 @@ public class TestCreateTable extends CatalogTestBase {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Cannot downgrade v2 table to v1");
   }
+
+  @TestTemplate
+  public void testCreateTableWithDefaultValues() {
+    assertThat(validationCatalog.tableExists(tableIdent))
+            .as("Table should not already exist")
+            .isFalse();
+
+    sql("CREATE TABLE %s (id BIGINT NOT NULL, " +
+            "test array<array<string>> default array(array('x'))) USING iceberg " +
+            "TBLPROPERTIES('format-version'='3')", tableName);
+    sql("insert into %s values (1, 'null')", tableName);
+    sql("select * from %s", tableName);
+  }
+
 }

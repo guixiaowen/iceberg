@@ -19,6 +19,9 @@
 package org.apache.iceberg.spark;
 
 import java.util.List;
+import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
+import org.apache.iceberg.expressions.Literals;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -83,11 +86,17 @@ class SparkTypeToType extends SparkTypeVisitor<Type> {
       }
 
       String doc = field.getComment().isDefined() ? field.getComment().get() : null;
+      Literal<?> initialDefault = null;
+      Literal<?> writeDefault = null;
+      if (!field.metadata().isEmpty()) {
+        initialDefault = Expressions.lit(field.metadata().map().contains("EXISTS_DEFAULT") ? field.metadata().map().get("EXISTS_DEFAULT").get() : null);
+        writeDefault = Expressions.lit(field.metadata().map().contains("CURRENT_DEFAULT") ? field.metadata().map().get("CURRENT_DEFAULT").get() : null);
+      }
 
       if (field.nullable()) {
-        newFields.add(Types.NestedField.optional(id, field.name(), type, doc));
+        newFields.add(Types.NestedField.optional(id, field.name(), type, doc, initialDefault, writeDefault));
       } else {
-        newFields.add(Types.NestedField.required(id, field.name(), type, doc));
+        newFields.add(Types.NestedField.required(id, field.name(), type, doc, initialDefault, writeDefault));
       }
     }
 

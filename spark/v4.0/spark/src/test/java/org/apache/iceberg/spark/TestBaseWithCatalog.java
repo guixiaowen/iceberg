@@ -186,11 +186,13 @@ public abstract class TestBaseWithCatalog extends TestBase {
 
   protected void configurePlanningMode(String table, PlanningMode planningMode) {
     sql(
-        "ALTER TABLE %s SET TBLPROPERTIES ('%s' '%s', '%s' '%s')",
+        "ALTER TABLE %s SET TBLPROPERTIES ('%s' '%s', '%s' '%s', '%s' '%s')",
         table,
         TableProperties.DATA_PLANNING_MODE,
         planningMode.modeName(),
         TableProperties.DELETE_PLANNING_MODE,
-        planningMode.modeName());
+        planningMode.modeName(),
+            TableProperties.FORMAT_VERSION,
+            "3");
   }
 }
