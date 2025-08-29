@@ -18,6 +18,8 @@
  */
 package org.apache.iceberg.spark;
 
+import java.util.Set;
+import org.apache.comet.shaded.guava.collect.ImmutableSet;
 import org.apache.iceberg.spark.procedures.SparkProcedures;
 import org.apache.iceberg.spark.procedures.SparkProcedures.ProcedureBuilder;
 import org.apache.iceberg.spark.source.HasIcebergCatalog;
@@ -26,6 +28,7 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.ProcedureCatalog;
 import org.apache.spark.sql.connector.catalog.StagingTableCatalog;
 import org.apache.spark.sql.connector.catalog.SupportsNamespaces;
+import org.apache.spark.sql.connector.catalog.TableCatalogCapability;
 import org.apache.spark.sql.connector.catalog.ViewCatalog;
 import org.apache.spark.sql.connector.catalog.procedures.UnboundProcedure;
 import org.apache.spark.sql.util.CaseInsensitiveStringMap;
@@ -58,6 +61,11 @@ abstract class BaseCatalog
     }
 
     throw new RuntimeException("Procedure " + ident + " not found");
+  }
+
+  @Override
+  public Set<TableCatalogCapability> capabilities() {
+    return ImmutableSet.of(TableCatalogCapability.SUPPORT_COLUMN_DEFAULT_VALUE);
   }
 
   @Override

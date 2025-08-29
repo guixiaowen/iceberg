@@ -19,9 +19,12 @@
 package org.apache.iceberg.spark;
 
 import java.util.List;
+import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.Literal;
 import org.apache.iceberg.relocated.com.google.common.collect.Lists;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
+import org.apache.spark.sql.catalyst.util.ResolveDefaultColumnsUtils$;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.BinaryType;
 import org.apache.spark.sql.types.BooleanType;
@@ -85,8 +88,25 @@ class SparkTypeToType extends SparkTypeVisitor<Type> {
 
       String doc = field.getComment().isDefined() ? field.getComment().get() : null;
 
+      Literal<?> defaultValue = null;
+      if (field.metadata().map().
+              contains(ResolveDefaultColumnsUtils$.MODULE$.EXISTS_DEFAULT_COLUMN_METADATA_KEY())) {
+        if (type.typeId() == Type.TypeID.STRUCT) {
+          throw new UnsupportedOperationException(
+                  String.format("Adding struct %s with default value is not supported", field.name()));
+        }
+
+        if (type.typeId() == Type.TypeID.MAP) {
+          throw new UnsupportedOperationException(
+                  String.format("Adding map %s with default value is not supported", field.name()));
+        }
+
+        defaultValue = Expressions.lit(type.typeId().javaClass().cast(field.metadata().map().get(ResolveDefaultColumnsUtils$.MODULE$.CURRENT_DEFAULT_COLUMN_METADATA_KEY()).get()));
+      }
+
+
       if (field.nullable()) {
-        newFields.add(Types.NestedField.optional(id, field.name(), type, doc));
+        newFields.add(Types.NestedField.optional(id, field.name(), type, doc, defaultValue, defaultValue));
       } else {
         newFields.add(Types.NestedField.required(id, field.name(), type, doc));
       }

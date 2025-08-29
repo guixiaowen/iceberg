@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.UUID;
+import org.apache.comet.shaded.guava.collect.ImmutableList;
 import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.ParameterizedTestExtension;
 import org.apache.iceberg.PartitionSpec;
@@ -454,4 +455,22 @@ public class TestCreateTable extends CatalogTestBase {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Cannot downgrade v2 table to v1");
   }
+
+  @TestTemplate
+  public void testCreateTableColumnSetDefault() {
+    assertThat(validationCatalog.tableExists(tableIdent))
+            .as("Table should not already exist")
+            .isFalse();
+    sql("CREATE TABLE %s (id BIGINT NOT NULL , " +
+            "data STRING default 'default_data') USING iceberg " +
+            "TBLPROPERTIES ('format-version'='3')", tableName);
+
+    sql("INSERT INTO %s VALUES (1, DEFAULT)", tableName);
+
+    assertEquals(
+            "Should have expected rows",
+            ImmutableList.of(row(1L, "default_data")),
+            sql("SELECT * FROM %s", tableName));
+  }
+
 }
