@@ -24,6 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.hadoop.HadoopCatalog;
@@ -156,15 +160,67 @@ public class TestAlterTable extends CatalogTestBase {
 
   @TestTemplate
   public void testAddColumnWithDefaultValuesUnsupported() {
-//    assertThatThrownBy(
-//            () -> sql("ALTER TABLE %s ADD COLUMN col_with_default int DEFAULT 123", tableName))
-//        .isInstanceOf(UnsupportedOperationException.class)
-//        .hasMessageStartingWith(
-//            "Cannot add column col_with_default since setting default values in Spark is currently unsupported");
-    sql("ALTER TABLE %s SET TBLPROPERTIES ('format-version'='3')", tableName);
-    sql("INSERT INTO %s VALUES(1, 'test')", tableName);
-    sql("ALTER TABLE %s ADD COLUMN col_with_default string DEFAULT 123", tableName);
-    sql("SELECT * FROM %s", tableName);
+    Object[][] cases =
+            new Object[][] {
+                    {"int", 42, 99},
+                    {"bigint", 123456789L, 987654321L},
+                    {"float", 3.14f, 9.81f},
+                    {"double", 2.71828, 1.618},
+                    {"decimal(9,2)", new BigDecimal("123.45"), new BigDecimal("99.99")},
+                    {"string", "DEFAULT_STRING", "EXPLICIT_STRING"},
+                    {"boolean", true, false}
+            };
+    for (Object[] testCase : cases) {
+      String columnType = (String) testCase[0];
+      Object defaultValue = testCase[1];
+      Object explicitInsertedValue = testCase[2];
+      String tableName = (catalogName.equals("spark_catalog") ? "" : catalogName + ".") + "default.add_column";
+      sql("CREATE TABLE %s (ID INT) USING ICEBERG TBLPROPERTIES('format-version'='3') ", tableName);
+      sql("INSERT INTO %s VALUES (1), (2)", tableName);
+      String defaultValueSql = defaultValue.toString();
+      if (columnType.equals("boolean")) {
+        defaultValueSql = "true";
+      } else if (columnType.equals("string")) {
+        defaultValueSql = "'DEFAULT_STRING'";
+      }
+      sql("ALTER TABLE %s ADD COLUMN NEW_COL %s DEFAULT %s", tableName, columnType, defaultValueSql);
+      Schema updatedSchema =
+              validationCatalog
+                      .loadTable(TableIdentifier.of("default", "add_column"))
+                      .schema();
+      Types.NestedField newField = updatedSchema.findField("NEW_COL");
+      assertThat(newField).as("New field should exist").isNotNull();
+      assertThat(newField.initialDefault()).isEqualTo(defaultValue);
+      assertThat(newField.writeDefault()).isEqualTo(defaultValue);
+
+      // Insert explicit and default values
+      String explicitValSql =
+              columnType.equals("boolean")
+                      ? "false"
+                      : (columnType.equals("string")
+                      ? "'EXPLICIT_STRING'"
+                      : explicitInsertedValue.toString());
+      sql("INSERT INTO %s VALUES (3, %s)", tableName, explicitValSql);
+      sql("INSERT INTO %s VALUES (4, DEFAULT)", tableName);
+
+      List<Object[]> expectedRows =
+              Arrays.asList(
+                      row(1, defaultValue),
+                      row(2, defaultValue),
+                      row(3, explicitInsertedValue),
+                      row(4, defaultValue));
+
+      List<Object[]> actualRows = sql("SELECT * FROM %s ORDER BY id", tableName);
+
+      assertEquals(
+              String.format(
+                      "Rows did not match for type: %s (default: %s, explicit: %s)",
+                      columnType, defaultValue, explicitInsertedValue),
+              expectedRows,
+              actualRows);
+
+      sql("DROP TABLE IF EXISTS %s", tableName);
+    }
   }
 
   @TestTemplate

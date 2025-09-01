@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.spark;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,8 +46,13 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalog.Column;
 import org.apache.spark.sql.catalyst.util.ResolveDefaultColumnsUtils$;
 import org.apache.spark.sql.connector.catalog.ColumnDefaultValue;
+import org.apache.spark.sql.connector.expressions.LiteralValue;
 import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.Decimal;
+import org.apache.spark.sql.types.DecimalType;
+import org.apache.spark.sql.types.StringType;
 import org.apache.spark.sql.types.StructType;
+import org.apache.spark.unsafe.types.UTF8String;
 
 /** Helper methods for working with Spark/Hive metadata. */
 public class SparkSchemaUtil {
@@ -161,8 +167,19 @@ public class SparkSchemaUtil {
               String.format("Adding map %s with default value is not supported", fieldName));
     }
 
-    if (columnDefaultValue.getSql() !=null) {
-      return Expressions.lit(type.typeId().javaClass().cast(columnDefaultValue.getSql()));
+    if (columnDefaultValue.getValue() != null) {
+      org.apache.spark.sql.connector.expressions.Literal<?> value = columnDefaultValue.getValue();
+      if (value instanceof LiteralValue) {
+        if (value.dataType() instanceof DecimalType) {
+          return Expressions.lit(type.typeId().javaClass().cast(((Decimal) value.value()).toBigDecimal().underlying()));
+        }
+        if (value.dataType() instanceof StringType) {
+          return Expressions.lit(type.typeId().javaClass().cast(((UTF8String) value.value()).toString()));
+        }
+        return Expressions.lit(type.typeId().javaClass().cast(value.value()));
+      } else {
+        return null;
+      }
     } else {
       return null;
     }
