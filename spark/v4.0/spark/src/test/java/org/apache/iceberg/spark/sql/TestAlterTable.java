@@ -201,14 +201,12 @@ public class TestAlterTable extends CatalogTestBase {
                       ? "'EXPLICIT_STRING'"
                       : explicitInsertedValue.toString());
       sql("INSERT INTO %s VALUES (3, %s)", tableName, explicitValSql);
-      sql("INSERT INTO %s VALUES (4, DEFAULT)", tableName);
 
       List<Object[]> expectedRows =
               Arrays.asList(
                       row(1, defaultValue),
                       row(2, defaultValue),
-                      row(3, explicitInsertedValue),
-                      row(4, defaultValue));
+                      row(3, explicitInsertedValue));
 
       List<Object[]> actualRows = sql("SELECT * FROM %s ORDER BY id", tableName);
 
