@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.hadoop.HadoopCatalog;
@@ -53,10 +54,12 @@ public class TestAlterTable extends CatalogTestBase {
 
   @TestTemplate
   public void testAddColumnNotNull() {
-    assertThatThrownBy(() -> sql("ALTER TABLE %s ADD COLUMN c3 INT NOT NULL", tableName))
-        .isInstanceOf(SparkException.class)
-        .hasMessage(
-            "Unsupported table change: Incompatible change: cannot add required column: c3");
+    sql("ALTER TABLE %s ADD COLUMN c3 INT NOT NULL", tableName);
+
+    Table table = validationCatalog.loadTable(tableIdent);
+    assertThat(table.schema().findField("c3").isRequired())
+            .as("Should have the expected required value ")
+            .isEqualTo(true);
   }
 
   @TestTemplate

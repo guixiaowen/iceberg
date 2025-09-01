@@ -230,10 +230,6 @@ public class Spark3Util {
   }
 
   private static void apply(UpdateSchema pendingUpdate, TableChange.AddColumn add) {
-    Preconditions.checkArgument(
-        add.isNullable(),
-        "Incompatible change: cannot add required column: %s",
-        leafName(add.fieldNames()));
     if (add.defaultValue() != null) {
       throw new UnsupportedOperationException(
           String.format(
@@ -242,8 +238,12 @@ public class Spark3Util {
     }
 
     Type type = SparkSchemaUtil.convert(add.dataType());
-    pendingUpdate.addColumn(
-        parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment());
+    if (!add.isNullable()) {
+      pendingUpdate.addRequiredColumn(parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment());
+    } else {
+      pendingUpdate.addColumn(
+              parentName(add.fieldNames()), leafName(add.fieldNames()), type, add.comment());
+    }
 
     if (add.position() instanceof TableChange.After) {
       TableChange.After after = (TableChange.After) add.position();
